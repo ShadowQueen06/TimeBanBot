@@ -12,7 +12,7 @@ GatewayIntentBits.GuildMembers
 
 const TOKEN = process.env.TOKEN;
 
-client.on("clientReady", () => {
+client.on("ready", () => {
 console.log(`${client.user.tag} Online`);
 });
 
