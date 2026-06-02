@@ -19,41 +19,44 @@ client.on("ready", () => {
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
 
-  if (!message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers))
-    return;
-
-  const args = message.content.split(" ");
-  const command = args[0].toLowerCase();
+  const content = message.content.trim();
+  const args = content.split(/\s+/);
 
   const member = message.mentions.members.first();
-
   if (!member) return;
 
-  if (command === "تايم") {
-    const time = args[2];
+  const hasTimePerm = message.member.permissions.has(PermissionsBitField.Flags.ModerateMembers);
+  const hasKickPerm = message.member.permissions.has(PermissionsBitField.Flags.KickMembers);
+  const hasBanPerm = message.member.permissions.has(PermissionsBitField.Flags.BanMembers);
 
-    if (!time) {
-      return message.reply("حدد الوقت");
+  const command = args.find(a => ["تايم", "ميوت", "طرد", "كيك", "باند", "بان"].includes(a));
+  const time = args.find(a => ms(a));
+
+  try {
+    if (command === "تايم" || command === "ميوت") {
+      if (!hasTimePerm) return;
+      if (!time) return message.reply("حدد الوقت");
+
+      await member.timeout(ms(time));
+      return message.channel.send(`تم إعطاء ${member.user.tag} تايم لمدة ${time}`);
     }
 
-    await member.timeout(ms(time));
-    return message.channel.send(
-      `تم إعطاء ${member.user.tag} تايم لمدة ${time}`
-    );
-  }
+    if (command === "طرد" || command === "كيك") {
+      if (!hasKickPerm) return;
 
-  if (command === "طرد" || command === "كيك") {
-    await member.kick();
-    return message.channel.send(
-      `تم طرد ${member.user.tag}`
-    );
-  }
+      await member.kick();
+      return message.channel.send(`تم طرد ${member.user.tag}`);
+    }
 
-  if (command === "باند" || command === "بان") {
-    await member.ban();
-    return message.channel.send(
-      `تم حظر ${member.user.tag}`
-    );
+    if (command === "باند" || command === "بان") {
+      if (!hasBanPerm) return;
+
+      await member.ban();
+      return message.channel.send(`تم حظر ${member.user.tag}`);
+    }
+  } catch (err) {
+    console.log(err);
+    return message.reply("ما كدرت أنفذ الأمر. تأكد رتبة البوت أعلى من رتبة الشخص.");
   }
 });
 
