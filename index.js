@@ -12,7 +12,7 @@ const client = new Client({
 
 const TOKEN = process.env.TOKEN;
 
-client.on("ready", () => {
+client.on("clientReady", () => {
   console.log(`${client.user.tag} Online`);
 });
 
@@ -23,7 +23,6 @@ client.on("messageCreate", async (message) => {
   const args = content.split(/\s+/);
 
   const member = message.mentions.members.first();
-  if (!member) return;
 
   const hasTimePerm = message.member.permissions.has(
     PermissionsBitField.Flags.ModerateMembers
@@ -38,14 +37,35 @@ client.on("messageCreate", async (message) => {
   );
 
   const command = args.find(arg =>
-    ["تايم", "ميوت", "طرد", "كيك", "باند", "بان", "دي"].includes(arg)
+    [
+      "تايم",
+      "ميوت",
+      "كيك",
+      "طرد",
+      "باند",
+      "بان",
+      "دي",
+      "فك",
+      "unban"
+    ].includes(arg)
   );
 
-  const time = args.find(arg => ms(arg));
+  const time = args.find(arg => {
+    try {
+      return ms(arg);
+    } catch {
+      return false;
+    }
+  });
 
   try {
+
     if (command === "تايم" || command === "ميوت") {
       if (!hasTimePerm) return;
+
+      if (!member) {
+        return message.reply("منشن الشخص");
+      }
 
       if (!time) {
         return message.reply("حدد الوقت");
@@ -58,8 +78,12 @@ client.on("messageCreate", async (message) => {
       );
     }
 
-    if (command === "طرد" || command === "كيك") {
+    if (command === "كيك" || command === "طرد") {
       if (!hasKickPerm) return;
+
+      if (!member) {
+        return message.reply("منشن الشخص");
+      }
 
       await member.kick();
 
@@ -75,10 +99,33 @@ client.on("messageCreate", async (message) => {
     ) {
       if (!hasBanPerm) return;
 
+      if (!member) {
+        return message.reply("منشن الشخص");
+      }
+
       await member.ban();
 
       return message.channel.send(
         `تم حظر ${member.user.tag}`
+      );
+    }
+
+    if (
+      command === "فك" ||
+      command === "unban"
+    ) {
+      if (!hasBanPerm) return;
+
+      const userId = args.find(arg => /^\d+$/.test(arg));
+
+      if (!userId) {
+        return message.reply("اكتب ايدي الشخص");
+      }
+
+      await message.guild.members.unban(userId);
+
+      return message.channel.send(
+        `تم فك الباند عن ${userId}`
       );
     }
 
